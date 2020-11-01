@@ -25,6 +25,15 @@ class Block(arcade.SpriteSolidColor):
         self.center_x = center_x
         self.center_y = center_y
 
+    def move_down(self) -> None:
+        self.center_y -= SQUARE_SIZE
+
+    def move_left(self) -> None:
+        self.center_x -= SQUARE_SIZE
+
+    def move_right(self) -> None:
+        self.center_x += SQUARE_SIZE
+
     def in_bottom_row(self) -> bool:
         return self.center_y == SQUARE_SIZE * 2
 
@@ -44,39 +53,29 @@ class TetrisPiece:
         for block in self.blocks:
             block.draw()
 
-    def move_up(self) -> None:
-        for block in self.blocks:
-            block.center_y += SQUARE_SIZE
-
     def move_down(self, block_list: arcade.SpriteList) -> None:
         for block in self.blocks:
-            block.center_y -= SQUARE_SIZE
-        #if any(block.collides_with_list(block_list) for block in self.blocks):
+            block.move_down()
+        # if any(block.collides_with_list(block_list) for block in self.blocks):
         #    for block in self.blocks:
         #        block.center_y += SQUARE_SIZE
 
     def move_left(self) -> None:
         for block in self.blocks:
-            block.center_x -= SQUARE_SIZE
+            block.move_left()
 
     def move_right(self) -> None:
         for block in self.blocks:
-            block.center_x += SQUARE_SIZE
-            
+            block.move_right()
+
     def at_bottom_edge(self) -> bool:
-        return any(
-            block.in_bottom_row() for block in self.blocks
-        )
-            
+        return any(block.in_bottom_row() for block in self.blocks)
+
     def at_left_edge(self) -> bool:
-        return any(
-            block.in_left_column() for block in self.blocks
-        )
-        
+        return any(block.in_left_column() for block in self.blocks)
+
     def at_right_edge(self) -> bool:
-        return any(
-            block.in_right_column() for block in self.blocks
-        )
+        return any(block.in_right_column() for block in self.blocks)
 
 
 class SquarePiece(TetrisPiece):
@@ -109,7 +108,7 @@ class Tetris(arcade.Window):
         self.block_list = arcade.SpriteList()
         self.block_list.extend(self.current_piece.blocks)
         self.block_list.extend(self.test_piece.blocks)
-        
+
     def on_key_press(self, symbol: int, modifiers: int) -> None:
         if symbol == arcade.key.LEFT and not self.current_piece.at_left_edge():
             self.current_piece.move_left()
