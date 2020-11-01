@@ -9,13 +9,15 @@ from itertools import product
 
 import arcade
 
+
 WINDOW_TITLE = "Tetris"
 SCREEN_SIZE = {"width": 640, "height": 640}
 HORIZONTAL_SQUARES = 10
 VERTICAL_SQUARES = 18
 SQUARE_SIZE = 32
-MARGIN = 64
+MARGIN = SQUARE_SIZE * 2
 FRAMES_PER_DROP = 15
+
 
 class Block(arcade.SpriteSolidColor):
     def __init__(self, color: arcade.Color, center_x: float, center_y: float):
@@ -25,6 +27,12 @@ class Block(arcade.SpriteSolidColor):
 
     def in_bottom_row(self) -> bool:
         return self.center_y == SQUARE_SIZE * 2
+
+    def in_left_column(self) -> bool:
+        return self.center_x == 0 + MARGIN
+
+    def in_right_column(self) -> bool:
+        return self.center_x == HORIZONTAL_SQUARES * SQUARE_SIZE + SQUARE_SIZE
 
 
 class TetrisPiece:
@@ -36,22 +44,48 @@ class TetrisPiece:
         for block in self.blocks:
             block.draw()
 
+    def move_up(self) -> None:
+        for block in self.blocks:
+            block.center_y += SQUARE_SIZE
+
     def move_down(self, block_list: arcade.SpriteList) -> None:
-        if not any(block.in_bottom_row() for block in self.blocks):
-            for block in self.blocks:
-                block.center_y -= SQUARE_SIZE
-        if any(block.collides_with_list(block_list) for block in self.blocks):
-            for block in self.blocks:
-                block.center_y += SQUARE_SIZE
+        for block in self.blocks:
+            block.center_y -= SQUARE_SIZE
+        #if any(block.collides_with_list(block_list) for block in self.blocks):
+        #    for block in self.blocks:
+        #        block.center_y += SQUARE_SIZE
+
+    def move_left(self) -> None:
+        for block in self.blocks:
+            block.center_x -= SQUARE_SIZE
+
+    def move_right(self) -> None:
+        for block in self.blocks:
+            block.center_x += SQUARE_SIZE
+            
+    def at_bottom_edge(self) -> bool:
+        return any(
+            block.in_bottom_row() for block in self.blocks
+        )
+            
+    def at_left_edge(self) -> bool:
+        return any(
+            block.in_left_column() for block in self.blocks
+        )
+        
+    def at_right_edge(self) -> bool:
+        return any(
+            block.in_right_column() for block in self.blocks
+        )
 
 
 class SquarePiece(TetrisPiece):
     def __init__(self):
         super().__init__(
-            Block(arcade.color.GREEN, SQUARE_SIZE*6, SQUARE_SIZE*18),
-            Block(arcade.color.GREEN, SQUARE_SIZE*7, SQUARE_SIZE*18),
-            Block(arcade.color.RED, SQUARE_SIZE*6, SQUARE_SIZE*19),
-            Block(arcade.color.RED, SQUARE_SIZE*7, SQUARE_SIZE*19)
+            Block(arcade.color.GREEN, SQUARE_SIZE * 6, SQUARE_SIZE * 18),
+            Block(arcade.color.GREEN, SQUARE_SIZE * 7, SQUARE_SIZE * 18),
+            Block(arcade.color.RED, SQUARE_SIZE * 6, SQUARE_SIZE * 19),
+            Block(arcade.color.RED, SQUARE_SIZE * 7, SQUARE_SIZE * 19),
         )
 
 
@@ -75,10 +109,17 @@ class Tetris(arcade.Window):
         self.block_list = arcade.SpriteList()
         self.block_list.extend(self.current_piece.blocks)
         self.block_list.extend(self.test_piece.blocks)
+        
+    def on_key_press(self, symbol: int, modifiers: int) -> None:
+        if symbol == arcade.key.LEFT and not self.current_piece.at_left_edge():
+            self.current_piece.move_left()
+        elif symbol == arcade.key.RIGHT and not self.current_piece.at_right_edge():
+            self.current_piece.move_right()
 
     def on_update(self, delta_time: float) -> None:
         if self.frame_count == FRAMES_PER_DROP:
-            self.current_piece.move_down(self.block_list)
+            if not self.current_piece.at_bottom_edge():
+                self.current_piece.move_down(self.block_list)
             self.frame_count = 0
         else:
             self.frame_count += 1
@@ -91,14 +132,11 @@ class Tetris(arcade.Window):
 
     def draw_grid(self) -> None:
         for x, y in product(
-            range(MARGIN, SQUARE_SIZE*HORIZONTAL_SQUARES+MARGIN, SQUARE_SIZE),
-            range(MARGIN, SQUARE_SIZE*VERTICAL_SQUARES+MARGIN, SQUARE_SIZE)
+            range(MARGIN, SQUARE_SIZE * HORIZONTAL_SQUARES + MARGIN, SQUARE_SIZE),
+            range(MARGIN, SQUARE_SIZE * VERTICAL_SQUARES + MARGIN, SQUARE_SIZE),
         ):
             arcade.draw_rectangle_outline(
-                x, y,
-                SQUARE_SIZE, SQUARE_SIZE,
-                arcade.color.BABY_PINK,
-                2
+                x, y, SQUARE_SIZE, SQUARE_SIZE, arcade.color.BABY_PINK, 2
             )
 
 
