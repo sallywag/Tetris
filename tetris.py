@@ -24,6 +24,9 @@ class Block(arcade.SpriteSolidColor):
         super().__init__(SQUARE_SIZE, SQUARE_SIZE, color)
         self.center_x = center_x
         self.center_y = center_y
+        
+    def move_up(self) -> None:
+        self.center_y += SQUARE_SIZE
 
     def move_down(self) -> None:
         self.center_y -= SQUARE_SIZE
@@ -47,18 +50,20 @@ class Block(arcade.SpriteSolidColor):
 class TetrisPiece:
     def __init__(self, *blocks: Tuple[Block]):
         super().__init__()
-        self.blocks = [*blocks]
+        self.blocks = arcade.SpriteList()
+        self.blocks.extend(blocks)
 
     def draw(self) -> None:
         for block in self.blocks:
             block.draw()
+            
+    def move_up(self) -> None:
+        for block in self.blocks:
+            block.move_up()
 
-    def move_down(self, block_list: arcade.SpriteList) -> None:
+    def move_down(self) -> None:
         for block in self.blocks:
             block.move_down()
-        # if any(block.collides_with_list(block_list) for block in self.blocks):
-        #    for block in self.blocks:
-        #        block.center_y += SQUARE_SIZE
 
     def move_left(self) -> None:
         for block in self.blocks:
@@ -81,10 +86,10 @@ class TetrisPiece:
 class SquarePiece(TetrisPiece):
     def __init__(self):
         super().__init__(
-            Block(arcade.color.GREEN, SQUARE_SIZE * 6, SQUARE_SIZE * 18),
+            Block(arcade.color.ORANGE, SQUARE_SIZE * 6, SQUARE_SIZE * 18),
             Block(arcade.color.GREEN, SQUARE_SIZE * 7, SQUARE_SIZE * 18),
             Block(arcade.color.RED, SQUARE_SIZE * 6, SQUARE_SIZE * 19),
-            Block(arcade.color.RED, SQUARE_SIZE * 7, SQUARE_SIZE * 19),
+            Block(arcade.color.BLUE, SQUARE_SIZE * 7, SQUARE_SIZE * 19),
         )
 
 
@@ -105,20 +110,30 @@ class Tetris(arcade.Window):
         self.test_piece.blocks[3].center_x -= 32
 
         self.frame_count = 0
-        self.block_list = arcade.SpriteList()
-        self.block_list.extend(self.current_piece.blocks)
-        self.block_list.extend(self.test_piece.blocks)
+        self.pieces = [self.test_piece]
 
     def on_key_press(self, symbol: int, modifiers: int) -> None:
         if symbol == arcade.key.LEFT and not self.current_piece.at_left_edge():
             self.current_piece.move_left()
+            if self.collides_with_other_pieces(self.current_piece):
+                self.current_piece.move_right()
         elif symbol == arcade.key.RIGHT and not self.current_piece.at_right_edge():
             self.current_piece.move_right()
+            if self.collides_with_other_pieces(self.current_piece):
+                self.current_piece.move_left()
+                    
+    def collides_with_other_pieces(self, piece: TetrisPiece) -> bool:
+        for piece_ in self.pieces:
+            if any(block.collides_with_list(piece_.blocks) for block in piece.blocks):
+               return True
+        return False
 
     def on_update(self, delta_time: float) -> None:
         if self.frame_count == FRAMES_PER_DROP:
             if not self.current_piece.at_bottom_edge():
-                self.current_piece.move_down(self.block_list)
+                self.current_piece.move_down()
+                if self.collides_with_other_pieces(self.current_piece):
+                    self.current_piece.move_up()
             self.frame_count = 0
         else:
             self.frame_count += 1
