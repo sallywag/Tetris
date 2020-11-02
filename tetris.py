@@ -24,27 +24,6 @@ class Block(arcade.SpriteSolidColor):
         super().__init__(SQUARE_SIZE, SQUARE_SIZE, color)
         self.center_x = center_x
         self.center_y = center_y
-        
-    def move_up(self) -> None:
-        self.center_y += SQUARE_SIZE
-
-    def move_down(self) -> None:
-        self.center_y -= SQUARE_SIZE
-
-    def move_left(self) -> None:
-        self.center_x -= SQUARE_SIZE
-
-    def move_right(self) -> None:
-        self.center_x += SQUARE_SIZE
-
-    def in_bottom_row(self) -> bool:
-        return self.center_y == SQUARE_SIZE * 2
-
-    def in_left_column(self) -> bool:
-        return self.center_x == 0 + MARGIN
-
-    def in_right_column(self) -> bool:
-        return self.center_x == HORIZONTAL_SQUARES * SQUARE_SIZE + SQUARE_SIZE
 
 
 class TetrisPiece:
@@ -56,31 +35,34 @@ class TetrisPiece:
     def draw(self) -> None:
         for block in self.blocks:
             block.draw()
-            
+
     def move_up(self) -> None:
         for block in self.blocks:
-            block.move_up()
+            block.center_y += SQUARE_SIZE
 
     def move_down(self) -> None:
         for block in self.blocks:
-            block.move_down()
+            block.center_y -= SQUARE_SIZE
 
     def move_left(self) -> None:
         for block in self.blocks:
-            block.move_left()
+            block.center_x -= SQUARE_SIZE
 
     def move_right(self) -> None:
         for block in self.blocks:
-            block.move_right()
+            block.center_x += SQUARE_SIZE
 
     def at_bottom_edge(self) -> bool:
-        return any(block.in_bottom_row() for block in self.blocks)
+        return any(block.center_y == SQUARE_SIZE * 2 for block in self.blocks)
 
     def at_left_edge(self) -> bool:
-        return any(block.in_left_column() for block in self.blocks)
+        return any(block.center_x == 0 + MARGIN for block in self.blocks)
 
     def at_right_edge(self) -> bool:
-        return any(block.in_right_column() for block in self.blocks)
+        return any(
+            block.center_x == HORIZONTAL_SQUARES * SQUARE_SIZE + SQUARE_SIZE
+            for block in self.blocks
+        )
 
 
 class SquarePiece(TetrisPiece):
@@ -121,11 +103,11 @@ class Tetris(arcade.Window):
             self.current_piece.move_right()
             if self.collides_with_other_pieces(self.current_piece):
                 self.current_piece.move_left()
-                    
+
     def collides_with_other_pieces(self, piece: TetrisPiece) -> bool:
         for piece_ in self.pieces:
             if any(block.collides_with_list(piece_.blocks) for block in piece.blocks):
-               return True
+                return True
         return False
 
     def on_update(self, delta_time: float) -> None:
@@ -137,6 +119,9 @@ class Tetris(arcade.Window):
             self.frame_count = 0
         else:
             self.frame_count += 1
+
+    def clear_full_rows(self):
+        pass
 
     def on_draw(self) -> None:
         arcade.start_render()
