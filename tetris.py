@@ -6,6 +6,7 @@ CANT MOVE BLOCK MUST CHECK FOR COLLISION AT PIECE LEVEL
 """
 from typing import Tuple
 from itertools import product
+import random
 
 import arcade
 
@@ -80,6 +81,8 @@ class Tetris(arcade.Window):
         super().__init__(SCREEN_SIZE["width"], SCREEN_SIZE["height"], WINDOW_TITLE)
         arcade.set_background_color(arcade.color.BLACK)
         self.current_piece = SquarePiece()
+        self.next_piece = random.choice([SquarePiece])()
+        self.rows_cleared = 0
 
         self.test_piece_1 = SquarePiece()
         self.test_piece_1.blocks[0].center_y -= SQUARE_SIZE * 16
@@ -90,7 +93,7 @@ class Tetris(arcade.Window):
         self.test_piece_1.blocks[1].center_x -= SQUARE_SIZE * 4
         self.test_piece_1.blocks[2].center_x -= SQUARE_SIZE * 4
         self.test_piece_1.blocks[3].center_x -= SQUARE_SIZE * 4
-        
+
         self.test_piece_2 = SquarePiece()
         self.test_piece_2.blocks[0].center_y -= SQUARE_SIZE * 16
         self.test_piece_2.blocks[1].center_y -= SQUARE_SIZE * 16
@@ -100,13 +103,13 @@ class Tetris(arcade.Window):
         self.test_piece_2.blocks[1].center_x -= SQUARE_SIZE * 2
         self.test_piece_2.blocks[2].center_x -= SQUARE_SIZE * 2
         self.test_piece_2.blocks[3].center_x -= SQUARE_SIZE * 2
-        
+
         self.test_piece_3 = SquarePiece()
         self.test_piece_3.blocks[0].center_y -= SQUARE_SIZE * 16
         self.test_piece_3.blocks[1].center_y -= SQUARE_SIZE * 16
         self.test_piece_3.blocks[2].center_y -= SQUARE_SIZE * 16
         self.test_piece_3.blocks[3].center_y -= SQUARE_SIZE * 16
-        
+
         self.test_piece_4 = SquarePiece()
         self.test_piece_4.blocks[0].center_y -= SQUARE_SIZE * 16
         self.test_piece_4.blocks[1].center_y -= SQUARE_SIZE * 16
@@ -116,7 +119,7 @@ class Tetris(arcade.Window):
         self.test_piece_4.blocks[1].center_x += SQUARE_SIZE * 2
         self.test_piece_4.blocks[2].center_x += SQUARE_SIZE * 2
         self.test_piece_4.blocks[3].center_x += SQUARE_SIZE * 2
-        
+
         self.test_piece_5 = SquarePiece()
         self.test_piece_5.blocks[0].center_y -= SQUARE_SIZE * 16
         self.test_piece_5.blocks[1].center_y -= SQUARE_SIZE * 16
@@ -128,7 +131,13 @@ class Tetris(arcade.Window):
         self.test_piece_5.blocks[3].center_x += SQUARE_SIZE * 4
 
         self.frame_count = 0
-        self.pieces = [self.test_piece_1, self.test_piece_2, self.test_piece_3, self.test_piece_4, self.test_piece_5]
+        self.pieces = [
+            self.test_piece_1,
+            self.test_piece_2,
+            self.test_piece_3,
+            self.test_piece_4,
+            self.test_piece_5,
+        ]
 
     def on_key_press(self, symbol: int, modifiers: int) -> None:
         if symbol == arcade.key.LEFT and not self.current_piece.at_left_edge():
@@ -139,7 +148,6 @@ class Tetris(arcade.Window):
             self.current_piece.move_right()
             if self.collides_with_other_pieces(self.current_piece):
                 self.current_piece.move_left()
-                
         if symbol == arcade.key.SPACE:
             self.clear_full_rows()
 
@@ -181,16 +189,20 @@ class Tetris(arcade.Window):
                 if block.center_y in locations_to_delete:
                     print("HERE")
                     piece.blocks.remove(block)
-                    
+
         print(self.pieces)
         for piece in self.pieces[:]:
             if not piece.blocks:
                 self.pieces.remove(piece)
         print(self.pieces)
+        
+        self.rows_cleared += len(locations_to_delete)
 
     def on_draw(self) -> None:
         arcade.start_render()
         self.draw_grid()
+        self.draw_next_piece_preview()
+        self.draw_score()
         self.current_piece.draw()
         for piece in self.pieces:
             piece.draw()
@@ -203,6 +215,26 @@ class Tetris(arcade.Window):
             arcade.draw_rectangle_outline(
                 x, y, SQUARE_SIZE, SQUARE_SIZE, arcade.color.BABY_PINK, 2
             )
+
+    def draw_next_piece_preview(self) -> None:
+        arcade.draw_rectangle_outline(
+            HORIZONTAL_SQUARES * SQUARE_SIZE + SQUARE_SIZE * 2 + MARGIN,
+            VERTICAL_SQUARES * SQUARE_SIZE,
+            SQUARE_SIZE * 3,
+            SQUARE_SIZE * 3,
+            arcade.color.BABY_BLUE,
+            2,
+        )
+
+    def draw_score(self) -> None:
+        arcade.draw_text(
+            f"Rows Cleared: {self.rows_cleared}",
+            384,
+            480,
+            arcade.color.BABY_POWDER,
+            14,
+            align="left"
+        )
 
 
 def main():
