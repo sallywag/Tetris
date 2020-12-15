@@ -168,35 +168,38 @@ class Tetris(arcade.Window):
             self.frame_count += 1
 
     def clear_full_rows(self) -> None:
-        count = {}
+        locations_to_delete = self.get_locations_to_delete(self.get_piece_count_per_row())
+        self.remove_blocks(locations_to_delete)
+        self.remove_pieces()
+        self.rows_cleared += len(locations_to_delete)
 
+    def get_piece_count_per_row(self) -> dict:
+        piece_count_per_row = {}
         for piece in self.pieces:
             for block in piece.blocks:
-                if block.center_y not in count:
-                    count[block.center_y] = 1
+                if block.center_y not in piece_count_per_row:
+                    piece_count_per_row[block.center_y] = 1
                 else:
-                    count[block.center_y] += 1
-        print(count)
+                    piece_count_per_row[block.center_y] += 1
+        return piece_count_per_row
 
+    def get_locations_to_delete(self, piece_count_per_row: dict) -> list:
         locations_to_delete = []
-        for key, value in count.items():
+        for key, value in piece_count_per_row.items():
             if value == HORIZONTAL_SQUARES:
                 locations_to_delete.append(key)
-        print(locations_to_delete)
+        return locations_to_delete
 
+    def remove_blocks(self, locations_to_delete: list) -> None:
         for piece in self.pieces:
             for block in piece.blocks[:]:
                 if block.center_y in locations_to_delete:
-                    print("HERE")
                     piece.blocks.remove(block)
 
-        print(self.pieces)
+    def remove_pieces(self) -> None:
         for piece in self.pieces[:]:
             if not piece.blocks:
                 self.pieces.remove(piece)
-        print(self.pieces)
-        
-        self.rows_cleared += len(locations_to_delete)
 
     def on_draw(self) -> None:
         arcade.start_render()
@@ -235,6 +238,9 @@ class Tetris(arcade.Window):
             14,
             align="left"
         )
+
+    def draw_reset_button(self) -> None:
+        pass
 
 
 def main():
