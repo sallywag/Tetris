@@ -37,21 +37,41 @@ class TetrisPiece:
         for block in self.blocks:
             block.draw()
 
-    def move_up(self) -> None:
-        for block in self.blocks:
-            block.center_y += SQUARE_SIZE
+    def move_down(self, other_pieces: list["TetrisPiece"]) -> None:
+        if not self.at_bottom_edge():
+            for block in self.blocks:
+                block.center_y -= SQUARE_SIZE
+            if self.collides_with_other_pieces(other_pieces):
+                for block in self.blocks:
+                    block.center_y += SQUARE_SIZE
 
-    def move_down(self) -> None:
-        for block in self.blocks:
-            block.center_y -= SQUARE_SIZE
+    def move_left(self, other_pieces: list["TetrisPiece"]) -> None:
+        if not self.at_left_edge():
+            for block in self.blocks:
+                block.center_x -= SQUARE_SIZE
+            if self.collides_with_other_pieces(other_pieces):
+                for block in self.blocks:
+                    block.center_x += SQUARE_SIZE
 
-    def move_left(self) -> None:
-        for block in self.blocks:
-            block.center_x -= SQUARE_SIZE
+    def move_right(self, other_pieces: list["TetrisPiece"]) -> None:
+        if not self.at_right_edge():
+            for block in self.blocks:
+                block.center_x += SQUARE_SIZE
+            if self.collides_with_other_pieces(other_pieces):
+                for block in self.blocks:
+                    block.center_x -= SQUARE_SIZE
 
-    def move_right(self) -> None:
-        for block in self.blocks:
-            block.center_x += SQUARE_SIZE
+    def drop(self, other_pieces: list["TetrisPiece"]) -> None:
+        if not self.at_bottom_edge():
+            while True:
+                for block in self.blocks:
+                    block.center_y -= SQUARE_SIZE
+                if self.collides_with_other_pieces(other_pieces):
+                    for block in self.blocks:
+                        block.center_y += SQUARE_SIZE
+                    break
+                if self.at_bottom_edge():
+                    break
 
     def at_bottom_edge(self) -> bool:
         return any(block.center_y == SQUARE_SIZE * 2 for block in self.blocks)
@@ -64,6 +84,12 @@ class TetrisPiece:
             block.center_x == HORIZONTAL_SQUARES * SQUARE_SIZE + SQUARE_SIZE
             for block in self.blocks
         )
+
+    def collides_with_other_pieces(self, other_pieces: list["TetrisPiece"]) -> bool:
+        for piece in other_pieces:
+            if any(block.collides_with_list(piece.blocks) for block in self.blocks):
+                return True
+        return False
 
 
 class SquarePiece(TetrisPiece):
@@ -83,6 +109,7 @@ class Tetris(arcade.Window):
         self.current_piece = SquarePiece()
         self.next_piece = random.choice([SquarePiece])()
         self.rows_cleared = 0
+        self.reset_button = arcade.SpriteSolidColor(96, 32, arcade.color.BARN_RED)
 
         self.test_piece_1 = SquarePiece()
         self.test_piece_1.blocks[0].center_y -= SQUARE_SIZE * 16
@@ -104,21 +131,21 @@ class Tetris(arcade.Window):
         self.test_piece_2.blocks[2].center_x -= SQUARE_SIZE * 2
         self.test_piece_2.blocks[3].center_x -= SQUARE_SIZE * 2
 
-        self.test_piece_3 = SquarePiece()
-        self.test_piece_3.blocks[0].center_y -= SQUARE_SIZE * 16
-        self.test_piece_3.blocks[1].center_y -= SQUARE_SIZE * 16
-        self.test_piece_3.blocks[2].center_y -= SQUARE_SIZE * 16
-        self.test_piece_3.blocks[3].center_y -= SQUARE_SIZE * 16
+        # self.test_piece_3 = SquarePiece()
+        # self.test_piece_3.blocks[0].center_y -= SQUARE_SIZE * 16
+        # self.test_piece_3.blocks[1].center_y -= SQUARE_SIZE * 16
+        # self.test_piece_3.blocks[2].center_y -= SQUARE_SIZE * 16
+        # self.test_piece_3.blocks[3].center_y -= SQUARE_SIZE * 16
 
-        self.test_piece_4 = SquarePiece()
-        self.test_piece_4.blocks[0].center_y -= SQUARE_SIZE * 16
-        self.test_piece_4.blocks[1].center_y -= SQUARE_SIZE * 16
-        self.test_piece_4.blocks[2].center_y -= SQUARE_SIZE * 16
-        self.test_piece_4.blocks[3].center_y -= SQUARE_SIZE * 16
-        self.test_piece_4.blocks[0].center_x += SQUARE_SIZE * 2
-        self.test_piece_4.blocks[1].center_x += SQUARE_SIZE * 2
-        self.test_piece_4.blocks[2].center_x += SQUARE_SIZE * 2
-        self.test_piece_4.blocks[3].center_x += SQUARE_SIZE * 2
+        # self.test_piece_4 = SquarePiece()
+        # self.test_piece_4.blocks[0].center_y -= SQUARE_SIZE * 16
+        # self.test_piece_4.blocks[1].center_y -= SQUARE_SIZE * 16
+        # self.test_piece_4.blocks[2].center_y -= SQUARE_SIZE * 16
+        # self.test_piece_4.blocks[3].center_y -= SQUARE_SIZE * 16
+        # self.test_piece_4.blocks[0].center_x += SQUARE_SIZE * 2
+        # self.test_piece_4.blocks[1].center_x += SQUARE_SIZE * 2
+        # self.test_piece_4.blocks[2].center_x += SQUARE_SIZE * 2
+        # self.test_piece_4.blocks[3].center_x += SQUARE_SIZE * 2
 
         self.test_piece_5 = SquarePiece()
         self.test_piece_5.blocks[0].center_y -= SQUARE_SIZE * 16
@@ -134,43 +161,32 @@ class Tetris(arcade.Window):
         self.pieces = [
             self.test_piece_1,
             self.test_piece_2,
-            self.test_piece_3,
-            self.test_piece_4,
+            # self.test_piece_3,
+            # self.test_piece_4,
             self.test_piece_5,
         ]
 
     def on_key_press(self, symbol: int, modifiers: int) -> None:
-        if symbol == arcade.key.LEFT and not self.current_piece.at_left_edge():
-            self.current_piece.move_left()
-            if self.collides_with_other_pieces(self.current_piece):
-                self.current_piece.move_right()
-        elif symbol == arcade.key.RIGHT and not self.current_piece.at_right_edge():
-            self.current_piece.move_right()
-            if self.collides_with_other_pieces(self.current_piece):
-                self.current_piece.move_left()
+        if symbol == arcade.key.LEFT:
+            self.current_piece.move_left(self.pieces)
+        elif symbol == arcade.key.RIGHT:
+            self.current_piece.move_right(self.pieces)
         if symbol == arcade.key.SPACE:
-            self.clear_full_rows()
-
-    def collides_with_other_pieces(self, piece: TetrisPiece) -> bool:
-        for piece_ in self.pieces:
-            if any(block.collides_with_list(piece_.blocks) for block in piece.blocks):
-                return True
-        return False
+            self.current_piece.drop(self.pieces)
 
     def on_update(self, delta_time: float) -> None:
         if self.frame_count == FRAMES_PER_DROP:
-            if not self.current_piece.at_bottom_edge():
-                self.current_piece.move_down()
-                if self.collides_with_other_pieces(self.current_piece):
-                    self.current_piece.move_up()
+            self.current_piece.move_down(self.pieces)
             self.frame_count = 0
         else:
             self.frame_count += 1
 
     def clear_full_rows(self) -> None:
-        locations_to_delete = self.get_locations_to_delete(self.get_piece_count_per_row())
+        locations_to_delete = self.get_locations_to_delete(
+            self.get_piece_count_per_row()
+        )
         self.remove_blocks(locations_to_delete)
-        self.remove_pieces()
+        self.remove_pieces_with_no_blocks()
         self.rows_cleared += len(locations_to_delete)
 
     def get_piece_count_per_row(self) -> dict:
@@ -196,7 +212,7 @@ class Tetris(arcade.Window):
                 if block.center_y in locations_to_delete:
                     piece.blocks.remove(block)
 
-    def remove_pieces(self) -> None:
+    def remove_pieces_with_no_blocks(self) -> None:
         for piece in self.pieces[:]:
             if not piece.blocks:
                 self.pieces.remove(piece)
@@ -236,11 +252,13 @@ class Tetris(arcade.Window):
             480,
             arcade.color.BABY_POWDER,
             14,
-            align="left"
+            align="left",
         )
 
-    def draw_reset_button(self) -> None:
-        pass
+    def draw_reset_button_text(self) -> None:
+        arcade.draw_text(
+            "Reset", 384, 416, arcade.color.BABY_POWDER, 14, align="center"
+        )
 
 
 def main():
