@@ -32,6 +32,7 @@ class TetrisPiece:
         super().__init__()
         self.blocks = arcade.SpriteList()
         self.blocks.extend(blocks)
+        self.falling = True
 
     def draw(self) -> None:
         for block in self.blocks:
@@ -44,6 +45,9 @@ class TetrisPiece:
             if self.collides_with_other_pieces(other_pieces):
                 for block in self.blocks:
                     block.center_y += SQUARE_SIZE
+                self.falling = False
+        else:
+            self.falling = False
 
     def move_left(self, other_pieces: list["TetrisPiece"]) -> None:
         if not self.at_left_edge():
@@ -72,6 +76,7 @@ class TetrisPiece:
                     break
                 if self.at_bottom_edge():
                     break
+            self.falling = False
 
     def at_bottom_edge(self) -> bool:
         return any(block.center_y == SQUARE_SIZE * 2 for block in self.blocks)
@@ -110,61 +115,8 @@ class Tetris(arcade.Window):
         self.next_piece = random.choice([SquarePiece])()
         self.rows_cleared = 0
         self.reset_button = arcade.SpriteSolidColor(96, 32, arcade.color.BARN_RED)
-
-        self.test_piece_1 = SquarePiece()
-        self.test_piece_1.blocks[0].center_y -= SQUARE_SIZE * 16
-        self.test_piece_1.blocks[1].center_y -= SQUARE_SIZE * 16
-        self.test_piece_1.blocks[2].center_y -= SQUARE_SIZE * 16
-        self.test_piece_1.blocks[3].center_y -= SQUARE_SIZE * 16
-        self.test_piece_1.blocks[0].center_x -= SQUARE_SIZE * 4
-        self.test_piece_1.blocks[1].center_x -= SQUARE_SIZE * 4
-        self.test_piece_1.blocks[2].center_x -= SQUARE_SIZE * 4
-        self.test_piece_1.blocks[3].center_x -= SQUARE_SIZE * 4
-
-        self.test_piece_2 = SquarePiece()
-        self.test_piece_2.blocks[0].center_y -= SQUARE_SIZE * 16
-        self.test_piece_2.blocks[1].center_y -= SQUARE_SIZE * 16
-        self.test_piece_2.blocks[2].center_y -= SQUARE_SIZE * 16
-        self.test_piece_2.blocks[3].center_y -= SQUARE_SIZE * 16
-        self.test_piece_2.blocks[0].center_x -= SQUARE_SIZE * 2
-        self.test_piece_2.blocks[1].center_x -= SQUARE_SIZE * 2
-        self.test_piece_2.blocks[2].center_x -= SQUARE_SIZE * 2
-        self.test_piece_2.blocks[3].center_x -= SQUARE_SIZE * 2
-
-        # self.test_piece_3 = SquarePiece()
-        # self.test_piece_3.blocks[0].center_y -= SQUARE_SIZE * 16
-        # self.test_piece_3.blocks[1].center_y -= SQUARE_SIZE * 16
-        # self.test_piece_3.blocks[2].center_y -= SQUARE_SIZE * 16
-        # self.test_piece_3.blocks[3].center_y -= SQUARE_SIZE * 16
-
-        # self.test_piece_4 = SquarePiece()
-        # self.test_piece_4.blocks[0].center_y -= SQUARE_SIZE * 16
-        # self.test_piece_4.blocks[1].center_y -= SQUARE_SIZE * 16
-        # self.test_piece_4.blocks[2].center_y -= SQUARE_SIZE * 16
-        # self.test_piece_4.blocks[3].center_y -= SQUARE_SIZE * 16
-        # self.test_piece_4.blocks[0].center_x += SQUARE_SIZE * 2
-        # self.test_piece_4.blocks[1].center_x += SQUARE_SIZE * 2
-        # self.test_piece_4.blocks[2].center_x += SQUARE_SIZE * 2
-        # self.test_piece_4.blocks[3].center_x += SQUARE_SIZE * 2
-
-        self.test_piece_5 = SquarePiece()
-        self.test_piece_5.blocks[0].center_y -= SQUARE_SIZE * 16
-        self.test_piece_5.blocks[1].center_y -= SQUARE_SIZE * 16
-        self.test_piece_5.blocks[2].center_y -= SQUARE_SIZE * 16
-        self.test_piece_5.blocks[3].center_y -= SQUARE_SIZE * 16
-        self.test_piece_5.blocks[0].center_x += SQUARE_SIZE * 4
-        self.test_piece_5.blocks[1].center_x += SQUARE_SIZE * 4
-        self.test_piece_5.blocks[2].center_x += SQUARE_SIZE * 4
-        self.test_piece_5.blocks[3].center_x += SQUARE_SIZE * 4
-
+        self.pieces = [self.current_piece]
         self.frame_count = 0
-        self.pieces = [
-            self.test_piece_1,
-            self.test_piece_2,
-            # self.test_piece_3,
-            # self.test_piece_4,
-            self.test_piece_5,
-        ]
 
     def on_key_press(self, symbol: int, modifiers: int) -> None:
         if symbol == arcade.key.LEFT:
@@ -180,31 +132,36 @@ class Tetris(arcade.Window):
             self.frame_count = 0
         else:
             self.frame_count += 1
+        if not self.current_piece.falling:
+            self.clear_full_rows()
+            self.current_piece = self.next_piece
+            self.pieces.append(self.current_piece)
+            self.next_piece = random.choice([SquarePiece])()
 
     def clear_full_rows(self) -> None:
-        locations_to_delete = self.get_locations_to_delete(
-            self.get_piece_count_per_row()
+        locations_to_delete = self.get_locations_of_blocks_to_delete(
+            self.get_block_count_per_row()
         )
         self.remove_blocks(locations_to_delete)
         self.remove_pieces_with_no_blocks()
         self.rows_cleared += len(locations_to_delete)
 
-    def get_piece_count_per_row(self) -> dict:
-        piece_count_per_row = {}
+    def get_block_count_per_row(self) -> dict:
+        block_count_per_row = {}
         for piece in self.pieces:
             for block in piece.blocks:
-                if block.center_y not in piece_count_per_row:
-                    piece_count_per_row[block.center_y] = 1
+                if block.center_y not in block_count_per_row:
+                    block_count_per_row[block.center_y] = 1
                 else:
-                    piece_count_per_row[block.center_y] += 1
-        return piece_count_per_row
+                    block_count_per_row[block.center_y] += 1
+        return block_count_per_row
 
-    def get_locations_to_delete(self, piece_count_per_row: dict) -> list:
-        locations_to_delete = []
-        for key, value in piece_count_per_row.items():
+    def get_locations_of_blocks_to_delete(self, block_count_per_row: dict) -> list:
+        locations_of_blocks_to_delete = []
+        for key, value in block_count_per_row.items():
             if value == HORIZONTAL_SQUARES:
-                locations_to_delete.append(key)
-        return locations_to_delete
+                locations_of_blocks_to_delete.append(key)
+        return locations_of_blocks_to_delete
 
     def remove_blocks(self, locations_to_delete: list) -> None:
         for piece in self.pieces:
@@ -222,7 +179,6 @@ class Tetris(arcade.Window):
         self.draw_grid()
         self.draw_next_piece_preview()
         self.draw_score()
-        self.current_piece.draw()
         for piece in self.pieces:
             piece.draw()
 
@@ -262,7 +218,7 @@ class Tetris(arcade.Window):
 
 
 def main():
-    game = Tetris()
+    Tetris()
     arcade.run()
 
 
