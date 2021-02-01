@@ -211,7 +211,7 @@ class TPiece(TetrisPiece):
         )
 
 
-class LPiece(TetrisPiece):
+class IPiece(TetrisPiece):
     def __init__(self):
         super().__init__(
             [
@@ -259,10 +259,10 @@ class Tetris(arcade.Window):
         self.setup()
 
     def setup(self) -> None:
-        self.current_piece = random.choice([OPiece, TPiece, LPiece])()
+        self.current_piece = random.choice([OPiece, TPiece, IPiece])()
         self.current_piece.move_piece_to_start()
         self.pieces = [self.current_piece]
-        self.next_piece = random.choice([OPiece, TPiece, LPiece])()
+        self.next_piece = random.choice([OPiece, TPiece, IPiece])()
         self.rows_cleared = 0
         self.frame_count = 0
         self.game_over = False
@@ -300,7 +300,7 @@ class Tetris(arcade.Window):
         self.current_piece = self.next_piece
         self.current_piece.move_piece_to_start()
         self.pieces.append(self.current_piece)
-        self.next_piece = random.choice([OPiece, TPiece, LPiece])()
+        self.next_piece = random.choice([OPiece, TPiece, IPiece])()
 
     def clear_full_rows(self) -> None:
         locations_to_delete = self.get_locations_of_blocks_to_delete(
