@@ -1,4 +1,4 @@
-from typing import List, Dict
+from typing import List, Tuple, Dict
 from itertools import product
 import random
 
@@ -11,7 +11,7 @@ HORIZONTAL_SQUARES = 10
 VERTICAL_SQUARES = 18
 SQUARE_SIZE = 32
 MARGIN = SQUARE_SIZE * 2
-FRAMES_PER_DROP = 15
+FRAMES_PER_DROP = 20
 
 
 class Block(arcade.SpriteSolidColor):
@@ -22,18 +22,29 @@ class Block(arcade.SpriteSolidColor):
 
 
 class TetrisPiece:
-    def __init__(self, blocks: List[Block], pivot_block_index: int = None):
+    def __init__(
+        self,
+        blocks: List[Block],
+        start_locations: List[Tuple],
+        pivot_block_index: int = None,
+    ):
         super().__init__()
         self.blocks = arcade.SpriteList()
         self.blocks.extend(blocks)
-        self.falling = True
+        self.start_locations = start_locations
         self.pivot_block = None
         if pivot_block_index:
             self.pivot_block = self.blocks[pivot_block_index]
+        self.falling = True
 
     def draw(self) -> None:
         for block in self.blocks:
             block.draw()
+
+    def move_piece_to_start(self) -> None:
+        for block, location in zip(self.blocks, self.start_locations):
+            block.center_x = location[0]
+            block.center_y = location[1]
 
     def rotate(self, other_pieces: List["TetrisPiece"]) -> None:
         if self.pivot_block is not None:
@@ -151,11 +162,33 @@ class OPiece(TetrisPiece):
     def __init__(self):
         super().__init__(
             [
-                Block(arcade.color.RED, SQUARE_SIZE * 6, SQUARE_SIZE * 18),
-                Block(arcade.color.RED, SQUARE_SIZE * 7, SQUARE_SIZE * 18),
-                Block(arcade.color.RED, SQUARE_SIZE * 6, SQUARE_SIZE * 19),
-                Block(arcade.color.RED, SQUARE_SIZE * 7, SQUARE_SIZE * 19),
-            ]
+                Block(
+                    arcade.color.RED,
+                    SQUARE_SIZE * 13 + SQUARE_SIZE / 2,
+                    SQUARE_SIZE * 17,
+                ),
+                Block(
+                    arcade.color.RED,
+                    SQUARE_SIZE * 14 + SQUARE_SIZE / 2,
+                    SQUARE_SIZE * 17,
+                ),
+                Block(
+                    arcade.color.RED,
+                    SQUARE_SIZE * 13 + SQUARE_SIZE / 2,
+                    SQUARE_SIZE * 18,
+                ),
+                Block(
+                    arcade.color.RED,
+                    SQUARE_SIZE * 14 + SQUARE_SIZE / 2,
+                    SQUARE_SIZE * 18,
+                ),
+            ],
+            [
+                (SQUARE_SIZE * 6, SQUARE_SIZE * 18),
+                (SQUARE_SIZE * 7, SQUARE_SIZE * 18),
+                (SQUARE_SIZE * 6, SQUARE_SIZE * 19),
+                (SQUARE_SIZE * 7, SQUARE_SIZE * 19),
+            ],
         )
 
 
@@ -163,12 +196,53 @@ class TPiece(TetrisPiece):
     def __init__(self):
         super().__init__(
             [
-                Block(arcade.color.PURPLE, SQUARE_SIZE * 7, SQUARE_SIZE * 18),
-                Block(arcade.color.PURPLE, SQUARE_SIZE * 6, SQUARE_SIZE * 19),
-                Block(arcade.color.PURPLE, SQUARE_SIZE * 7, SQUARE_SIZE * 19),
-                Block(arcade.color.PURPLE, SQUARE_SIZE * 8, SQUARE_SIZE * 19),
+                Block(arcade.color.PURPLE, SQUARE_SIZE * 14, SQUARE_SIZE * 17),
+                Block(arcade.color.PURPLE, SQUARE_SIZE * 13, SQUARE_SIZE * 18),
+                Block(arcade.color.PURPLE, SQUARE_SIZE * 14, SQUARE_SIZE * 18),
+                Block(arcade.color.PURPLE, SQUARE_SIZE * 15, SQUARE_SIZE * 18),
             ],
-            2,
+            [
+                (SQUARE_SIZE * 7, SQUARE_SIZE * 18),
+                (SQUARE_SIZE * 6, SQUARE_SIZE * 19),
+                (SQUARE_SIZE * 7, SQUARE_SIZE * 19),
+                (SQUARE_SIZE * 8, SQUARE_SIZE * 19),
+            ],
+            pivot_block_index=2,
+        )
+
+
+class LPiece(TetrisPiece):
+    def __init__(self):
+        super().__init__(
+            [
+                Block(
+                    arcade.color.ORANGE,
+                    SQUARE_SIZE * 13 - SQUARE_SIZE / 2,
+                    SQUARE_SIZE * 18 - SQUARE_SIZE / 2,
+                ),
+                Block(
+                    arcade.color.ORANGE,
+                    SQUARE_SIZE * 14 - SQUARE_SIZE / 2,
+                    SQUARE_SIZE * 18 - SQUARE_SIZE / 2,
+                ),
+                Block(
+                    arcade.color.ORANGE,
+                    SQUARE_SIZE * 15 - SQUARE_SIZE / 2,
+                    SQUARE_SIZE * 18 - SQUARE_SIZE / 2,
+                ),
+                Block(
+                    arcade.color.ORANGE,
+                    SQUARE_SIZE * 16 - SQUARE_SIZE / 2,
+                    SQUARE_SIZE * 18 - SQUARE_SIZE / 2,
+                ),
+            ],
+            [
+                (SQUARE_SIZE * 6, SQUARE_SIZE * 19),
+                (SQUARE_SIZE * 7, SQUARE_SIZE * 19),
+                (SQUARE_SIZE * 8, SQUARE_SIZE * 19),
+                (SQUARE_SIZE * 9, SQUARE_SIZE * 19),
+            ],
+            pivot_block_index=1,
         )
 
 
@@ -185,9 +259,10 @@ class Tetris(arcade.Window):
         self.setup()
 
     def setup(self) -> None:
-        self.current_piece = random.choice([OPiece, TPiece])()
+        self.current_piece = random.choice([OPiece, TPiece, LPiece])()
+        self.current_piece.move_piece_to_start()
         self.pieces = [self.current_piece]
-        self.next_piece = random.choice([OPiece, TPiece])()
+        self.next_piece = random.choice([OPiece, TPiece, LPiece])()
         self.rows_cleared = 0
         self.frame_count = 0
         self.game_over = False
@@ -223,8 +298,9 @@ class Tetris(arcade.Window):
         self.clear_full_rows()
         self.drop_hanging_pieces()
         self.current_piece = self.next_piece
+        self.current_piece.move_piece_to_start()
         self.pieces.append(self.current_piece)
-        self.next_piece = random.choice([OPiece, TPiece])()
+        self.next_piece = random.choice([OPiece, TPiece, LPiece])()
 
     def clear_full_rows(self) -> None:
         locations_to_delete = self.get_locations_of_blocks_to_delete(
@@ -271,7 +347,8 @@ class Tetris(arcade.Window):
     def on_draw(self) -> None:
         arcade.start_render()
         self.draw_grid()
-        self.draw_next_piece_preview()
+        self.draw_next_piece_preview_box()
+        self.next_piece.draw()
         self.draw_score()
         for piece in self.pieces:
             piece.draw()
@@ -288,12 +365,12 @@ class Tetris(arcade.Window):
                 x, y, SQUARE_SIZE, SQUARE_SIZE, arcade.color.BABY_PINK, 2
             )
 
-    def draw_next_piece_preview(self) -> None:
+    def draw_next_piece_preview_box(self) -> None:
         arcade.draw_rectangle_outline(
             HORIZONTAL_SQUARES * SQUARE_SIZE + SQUARE_SIZE * 2 + MARGIN,
-            VERTICAL_SQUARES * SQUARE_SIZE,
-            SQUARE_SIZE * 3,
-            SQUARE_SIZE * 3,
+            VERTICAL_SQUARES * SQUARE_SIZE - SQUARE_SIZE / 2,
+            SQUARE_SIZE * 4,
+            SQUARE_SIZE * 4,
             arcade.color.BABY_BLUE,
             2,
         )
@@ -302,25 +379,24 @@ class Tetris(arcade.Window):
         arcade.draw_text(
             f"Rows Cleared: {self.rows_cleared}",
             384,
-            480,
+            448,
             arcade.color.BABY_POWDER,
             14,
             align="left",
         )
 
     def draw_transparent_overlay(self) -> None:
-        transparent_color = arcade.make_transparent_color(arcade.color.TEAL, 150)
         arcade.draw_rectangle_filled(
-            MARGIN+SQUARE_SIZE*HORIZONTAL_SQUARES/2-SQUARE_SIZE/2,
-            MARGIN+SQUARE_SIZE*VERTICAL_SQUARES/2-SQUARE_SIZE/2,
-            SQUARE_SIZE*HORIZONTAL_SQUARES,
-            SQUARE_SIZE*VERTICAL_SQUARES,
-            transparent_color
+            MARGIN + SQUARE_SIZE * HORIZONTAL_SQUARES / 2 - SQUARE_SIZE / 2,
+            MARGIN + SQUARE_SIZE * VERTICAL_SQUARES / 2 - SQUARE_SIZE / 2,
+            SQUARE_SIZE * HORIZONTAL_SQUARES,
+            SQUARE_SIZE * VERTICAL_SQUARES,
+            arcade.make_transparent_color(arcade.color.TEAL, 150),
         )
-   
+
     def draw_reset_helper_text(self) -> None:
         arcade.draw_text(
-            "Left click to restart.",
+            "Left click to restart...",
             384,
             416,
             arcade.color.NEON_CARROT,
