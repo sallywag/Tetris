@@ -1,4 +1,4 @@
-from typing import List, Tuple, Dict
+from typing import List, Tuple, Dict, Optional
 from itertools import product
 import random
 
@@ -11,7 +11,6 @@ HORIZONTAL_SQUARES = 10
 VERTICAL_SQUARES = 18
 SQUARE_SIZE = 32
 MARGIN = SQUARE_SIZE * 2
-FRAMES_PER_DROP = 20
 
 
 class Block(arcade.SpriteSolidColor):
@@ -25,7 +24,7 @@ class TetrisPiece:
     def __init__(
         self,
         blocks: List[Block],
-        start_locations: List[Tuple],
+        start_locations: List[Tuple[float, float]],
         pivot_block_index: int = None,
     ):
         super().__init__()
@@ -157,11 +156,36 @@ class TetrisPiece:
                 return True
         return False
 
+    def collapse(self) -> None:
+        bottom_block = min(self.blocks, key=lambda block: block.center_y)
+        lower_blocks = [
+            block for block in self.blocks if block.center_y == bottom_block.center_y
+        ]
+        upper_blocks = [
+            block for block in self.blocks if block.center_y != bottom_block.center_y
+        ]
+        if upper_blocks:
+            while True:
+                for block in upper_blocks:
+                    block.center_y -= SQUARE_SIZE
+                if any(
+                    u_b.collides_with_sprite(l_b)
+                    for u_b in upper_blocks
+                    for l_b in lower_blocks
+                ):
+                    for block in upper_blocks:
+                        block.center_y += SQUARE_SIZE
+                    break
+                if any(
+                    block.center_y == bottom_block.center_y for block in upper_blocks
+                ):
+                    break
+
 
 class OPiece(TetrisPiece):
     def __init__(self):
         super().__init__(
-            [
+            blocks=[
                 Block(
                     arcade.color.RED,
                     SQUARE_SIZE * 13 + SQUARE_SIZE / 2,
@@ -183,7 +207,7 @@ class OPiece(TetrisPiece):
                     SQUARE_SIZE * 18,
                 ),
             ],
-            [
+            start_locations=[
                 (SQUARE_SIZE * 6, SQUARE_SIZE * 18),
                 (SQUARE_SIZE * 7, SQUARE_SIZE * 18),
                 (SQUARE_SIZE * 6, SQUARE_SIZE * 19),
@@ -195,13 +219,13 @@ class OPiece(TetrisPiece):
 class TPiece(TetrisPiece):
     def __init__(self):
         super().__init__(
-            [
+            blocks=[
                 Block(arcade.color.PURPLE, SQUARE_SIZE * 14, SQUARE_SIZE * 17),
                 Block(arcade.color.PURPLE, SQUARE_SIZE * 13, SQUARE_SIZE * 18),
                 Block(arcade.color.PURPLE, SQUARE_SIZE * 14, SQUARE_SIZE * 18),
                 Block(arcade.color.PURPLE, SQUARE_SIZE * 15, SQUARE_SIZE * 18),
             ],
-            [
+            start_locations=[
                 (SQUARE_SIZE * 7, SQUARE_SIZE * 18),
                 (SQUARE_SIZE * 6, SQUARE_SIZE * 19),
                 (SQUARE_SIZE * 7, SQUARE_SIZE * 19),
@@ -214,33 +238,201 @@ class TPiece(TetrisPiece):
 class IPiece(TetrisPiece):
     def __init__(self):
         super().__init__(
-            [
+            blocks=[
                 Block(
-                    arcade.color.ORANGE,
+                    arcade.color.YELLOW,
                     SQUARE_SIZE * 13 - SQUARE_SIZE / 2,
                     SQUARE_SIZE * 18 - SQUARE_SIZE / 2,
                 ),
                 Block(
-                    arcade.color.ORANGE,
+                    arcade.color.YELLOW,
                     SQUARE_SIZE * 14 - SQUARE_SIZE / 2,
                     SQUARE_SIZE * 18 - SQUARE_SIZE / 2,
                 ),
                 Block(
-                    arcade.color.ORANGE,
+                    arcade.color.YELLOW,
                     SQUARE_SIZE * 15 - SQUARE_SIZE / 2,
                     SQUARE_SIZE * 18 - SQUARE_SIZE / 2,
                 ),
                 Block(
-                    arcade.color.ORANGE,
+                    arcade.color.YELLOW,
                     SQUARE_SIZE * 16 - SQUARE_SIZE / 2,
                     SQUARE_SIZE * 18 - SQUARE_SIZE / 2,
                 ),
             ],
-            [
+            start_locations=[
                 (SQUARE_SIZE * 6, SQUARE_SIZE * 19),
                 (SQUARE_SIZE * 7, SQUARE_SIZE * 19),
                 (SQUARE_SIZE * 8, SQUARE_SIZE * 19),
                 (SQUARE_SIZE * 9, SQUARE_SIZE * 19),
+            ],
+            pivot_block_index=1,
+        )
+
+
+class JPiece(TetrisPiece):
+    def __init__(self):
+        super().__init__(
+            blocks=[
+                Block(
+                    arcade.color.BLUE,
+                    SQUARE_SIZE * 16 - SQUARE_SIZE,
+                    SQUARE_SIZE * 18 - SQUARE_SIZE,
+                ),
+                Block(
+                    arcade.color.BLUE,
+                    SQUARE_SIZE * 14 - SQUARE_SIZE,
+                    SQUARE_SIZE * 19 - SQUARE_SIZE,
+                ),
+                Block(
+                    arcade.color.BLUE,
+                    SQUARE_SIZE * 15 - SQUARE_SIZE,
+                    SQUARE_SIZE * 19 - SQUARE_SIZE,
+                ),
+                Block(
+                    arcade.color.BLUE,
+                    SQUARE_SIZE * 16 - SQUARE_SIZE,
+                    SQUARE_SIZE * 19 - SQUARE_SIZE,
+                ),
+            ],
+            start_locations=[
+                (SQUARE_SIZE * 8, SQUARE_SIZE * 18),
+                (SQUARE_SIZE * 6, SQUARE_SIZE * 19),
+                (SQUARE_SIZE * 7, SQUARE_SIZE * 19),
+                (SQUARE_SIZE * 8, SQUARE_SIZE * 19),
+            ],
+            pivot_block_index=2,
+        )
+
+
+class LPiece(TetrisPiece):
+    def __init__(self):
+        super().__init__(
+            blocks=[
+                Block(
+                    arcade.color.GREEN,
+                    SQUARE_SIZE * 14 - SQUARE_SIZE,
+                    SQUARE_SIZE * 18 - SQUARE_SIZE,
+                ),
+                Block(
+                    arcade.color.GREEN,
+                    SQUARE_SIZE * 14 - SQUARE_SIZE,
+                    SQUARE_SIZE * 19 - SQUARE_SIZE,
+                ),
+                Block(
+                    arcade.color.GREEN,
+                    SQUARE_SIZE * 15 - SQUARE_SIZE,
+                    SQUARE_SIZE * 19 - SQUARE_SIZE,
+                ),
+                Block(
+                    arcade.color.GREEN,
+                    SQUARE_SIZE * 16 - SQUARE_SIZE,
+                    SQUARE_SIZE * 19 - SQUARE_SIZE,
+                ),
+            ],
+            start_locations=[
+                (SQUARE_SIZE * 6, SQUARE_SIZE * 18),
+                (SQUARE_SIZE * 6, SQUARE_SIZE * 19),
+                (SQUARE_SIZE * 7, SQUARE_SIZE * 19),
+                (SQUARE_SIZE * 8, SQUARE_SIZE * 19),
+            ],
+            pivot_block_index=2,
+        )
+
+
+class SPiece(TetrisPiece):
+    def __init__(self):
+        super().__init__(
+            blocks=[
+                Block(
+                    arcade.color.NEON_FUCHSIA,
+                    SQUARE_SIZE * 14 - SQUARE_SIZE,
+                    SQUARE_SIZE * 18 - SQUARE_SIZE,
+                ),
+                Block(
+                    arcade.color.NEON_FUCHSIA,
+                    SQUARE_SIZE * 15 - SQUARE_SIZE,
+                    SQUARE_SIZE * 18 - SQUARE_SIZE,
+                ),
+                Block(
+                    arcade.color.NEON_FUCHSIA,
+                    SQUARE_SIZE * 15 - SQUARE_SIZE,
+                    SQUARE_SIZE * 19 - SQUARE_SIZE,
+                ),
+                Block(
+                    arcade.color.NEON_FUCHSIA,
+                    SQUARE_SIZE * 16 - SQUARE_SIZE,
+                    SQUARE_SIZE * 19 - SQUARE_SIZE,
+                ),
+            ],
+            start_locations=[
+                (SQUARE_SIZE * 6, SQUARE_SIZE * 18),
+                (SQUARE_SIZE * 7, SQUARE_SIZE * 18),
+                (SQUARE_SIZE * 7, SQUARE_SIZE * 19),
+                (SQUARE_SIZE * 8, SQUARE_SIZE * 19),
+            ],
+            pivot_block_index=2,
+        )
+
+
+class ZPiece(TetrisPiece):
+    def __init__(self):
+        super().__init__(
+            blocks=[
+                Block(
+                    arcade.color.GRAY_BLUE,
+                    SQUARE_SIZE * 15 - SQUARE_SIZE,
+                    SQUARE_SIZE * 18 - SQUARE_SIZE,
+                ),
+                Block(
+                    arcade.color.GRAY_BLUE,
+                    SQUARE_SIZE * 16 - SQUARE_SIZE,
+                    SQUARE_SIZE * 18 - SQUARE_SIZE,
+                ),
+                Block(
+                    arcade.color.GRAY_BLUE,
+                    SQUARE_SIZE * 14 - SQUARE_SIZE,
+                    SQUARE_SIZE * 19 - SQUARE_SIZE,
+                ),
+                Block(
+                    arcade.color.GRAY_BLUE,
+                    SQUARE_SIZE * 15 - SQUARE_SIZE,
+                    SQUARE_SIZE * 19 - SQUARE_SIZE,
+                ),
+            ],
+            start_locations=[
+                (SQUARE_SIZE * 7, SQUARE_SIZE * 18),
+                (SQUARE_SIZE * 8, SQUARE_SIZE * 18),
+                (SQUARE_SIZE * 6, SQUARE_SIZE * 19),
+                (SQUARE_SIZE * 7, SQUARE_SIZE * 19),
+            ],
+            pivot_block_index=3,
+        )
+
+class TestPiece(TetrisPiece):
+    def __init__(self):
+        super().__init__(
+            blocks=[
+                Block(
+                    arcade.color.GRAY_BLUE,
+                    SQUARE_SIZE * 15 - SQUARE_SIZE,
+                    SQUARE_SIZE * 18 - SQUARE_SIZE,
+                ),
+                Block(
+                    arcade.color.GRAY_BLUE,
+                    SQUARE_SIZE * 16 - SQUARE_SIZE,
+                    SQUARE_SIZE * 18 - SQUARE_SIZE,
+                ),
+                Block(
+                    arcade.color.GRAY_BLUE,
+                    SQUARE_SIZE * 17 - SQUARE_SIZE,
+                    SQUARE_SIZE * 18 - SQUARE_SIZE,
+                ),
+            ],
+            start_locations=[
+                (SQUARE_SIZE * 7, SQUARE_SIZE * 18),
+                (SQUARE_SIZE * 8, SQUARE_SIZE * 18),
+                (SQUARE_SIZE * 9, SQUARE_SIZE * 18),
             ],
             pivot_block_index=1,
         )
@@ -256,15 +448,17 @@ class Tetris(arcade.Window):
         self.rows_cleared = None
         self.frame_count = None
         self.game_over = None
+        self.frames_per_drop = 20
         self.setup()
 
     def setup(self) -> None:
-        self.current_piece = random.choice([OPiece, TPiece, IPiece])()
+        self.current_piece = self.get_random_piece()
         self.current_piece.move_piece_to_start()
         self.pieces = [self.current_piece]
-        self.next_piece = random.choice([OPiece, TPiece, IPiece])()
+        self.next_piece = self.get_random_piece()
         self.rows_cleared = 0
         self.frame_count = 0
+        self.frames_per_drop = 20
         self.game_over = False
 
     def on_key_press(self, symbol: int, modifiers: int) -> None:
@@ -284,65 +478,65 @@ class Tetris(arcade.Window):
 
     def on_update(self, delta_time: float) -> None:
         if not self.game_over:
-            if self.frame_count == FRAMES_PER_DROP:
+            if self.frame_count == self.frames_per_drop:
                 self.current_piece.move_down(self.pieces)
                 self.frame_count = 0
             else:
                 self.frame_count += 1
             if not self.current_piece.falling:
                 self.ready_next_piece()
+                self.clear_full_rows()
                 if self.current_piece.collides_with_other_pieces(self.pieces):
                     self.game_over = True
 
+
     def ready_next_piece(self) -> None:
-        self.clear_full_rows()
-        self.drop_hanging_pieces()
         self.current_piece = self.next_piece
         self.current_piece.move_piece_to_start()
         self.pieces.append(self.current_piece)
-        self.next_piece = random.choice([OPiece, TPiece, IPiece])()
+        self.next_piece = self.get_random_piece()
+
+    def get_random_piece(self) -> TetrisPiece:
+        return random.choice(
+            [OPiece, TPiece, IPiece, JPiece, LPiece, SPiece, ZPiece]
+        )()
 
     def clear_full_rows(self) -> None:
-        locations_to_delete = self.get_locations_of_blocks_to_delete(
-            self.get_block_count_per_row()
-        )
-        self.remove_blocks(locations_to_delete)
-        self.remove_pieces_with_no_blocks()
-        self.rows_cleared += len(locations_to_delete)
+        while locations_to_delete := self.get_locations_of_blocks_to_delete():
+            self.remove_blocks(locations_to_delete)
+            self.collapse_pieces()
+            self.drop_hanging_pieces()
+            self.rows_cleared += len(locations_to_delete)
 
-    def get_block_count_per_row(self) -> Dict[int, int]:
+    def get_locations_of_blocks_to_delete(self) -> Dict[int, int]:
         block_count_per_row = {}
+        full_row_locations = []
         for piece in self.pieces:
             for block in piece.blocks:
                 if block.center_y not in block_count_per_row:
                     block_count_per_row[block.center_y] = 1
                 else:
                     block_count_per_row[block.center_y] += 1
-        return block_count_per_row
-
-    def get_locations_of_blocks_to_delete(
-        self, block_count_per_row: Dict[int, int]
-    ) -> List[int]:
-        locations_of_blocks_to_delete = []
-        for key, value in block_count_per_row.items():
-            if value == HORIZONTAL_SQUARES:
-                locations_of_blocks_to_delete.append(key)
-        return locations_of_blocks_to_delete
+                if block_count_per_row[block.center_y] == HORIZONTAL_SQUARES:
+                    full_row_locations.append(block.center_y)
+        return full_row_locations
 
     def remove_blocks(self, locations_to_delete: List[int]) -> None:
-        for piece in self.pieces:
+        for piece in self.pieces[:]:
             for block in piece.blocks[:]:
                 if block.center_y in locations_to_delete:
                     piece.blocks.remove(block)
-
-    def remove_pieces_with_no_blocks(self) -> None:
-        for piece in self.pieces[:]:
             if not piece.blocks:
                 self.pieces.remove(piece)
 
+    def collapse_pieces(self) -> None:
+        for piece in self.pieces:
+            piece.collapse()
+
     def drop_hanging_pieces(self) -> None:
         for piece in self.pieces:
-            piece.drop(self.pieces)
+            if piece is not self.current_piece:
+                piece.drop(self.pieces)
 
     def on_draw(self) -> None:
         arcade.start_render()
@@ -378,8 +572,8 @@ class Tetris(arcade.Window):
     def draw_score(self) -> None:
         arcade.draw_text(
             f"Rows Cleared: {self.rows_cleared}",
-            384,
-            448,
+            SQUARE_SIZE * 12,
+            SQUARE_SIZE * 14,
             arcade.color.BABY_POWDER,
             14,
             align="left",
@@ -397,8 +591,8 @@ class Tetris(arcade.Window):
     def draw_reset_helper_text(self) -> None:
         arcade.draw_text(
             "Left click to restart...",
-            384,
-            416,
+            SQUARE_SIZE * 12,
+            SQUARE_SIZE * 13,
             arcade.color.NEON_CARROT,
             18,
             align="left",
