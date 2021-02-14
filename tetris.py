@@ -20,7 +20,7 @@ class Block(arcade.SpriteSolidColor):
         self.center_y = center_y
 
 
-class TetrisPiece:
+class Piece:
     def __init__(
         self,
         block_preview_locations: List[Tuple[float, float]],
@@ -47,7 +47,7 @@ class TetrisPiece:
             block.center_x = location[0]
             block.center_y = location[1]
 
-    def rotate(self, other_pieces: List["TetrisPiece"]) -> None:
+    def rotate(self, other_pieces: List["Piece"]) -> None:
         if self.pivot_block is not None:
             for block in self.blocks:
                 if block is not self.pivot_block:
@@ -69,7 +69,7 @@ class TetrisPiece:
         )
 
     def undo_rotation_if_collision_occurs(
-        self, other_pieces: List["TetrisPiece"]
+        self, other_pieces: List["Piece"]
     ) -> None:
         if (
             self.collides_with_other_pieces(other_pieces)
@@ -100,7 +100,7 @@ class TetrisPiece:
             for block in self.blocks
         )
 
-    def move_down(self, other_pieces: List["TetrisPiece"]) -> None:
+    def move_down(self, other_pieces: List["Piece"]) -> None:
         if not self.at_bottom_edge():
             for block in self.blocks:
                 block.center_y -= SQUARE_SIZE
@@ -111,7 +111,7 @@ class TetrisPiece:
         else:
             self.falling = False
 
-    def move_left(self, other_pieces: List["TetrisPiece"]) -> None:
+    def move_left(self, other_pieces: List["Piece"]) -> None:
         if not self.at_left_edge():
             for block in self.blocks:
                 block.center_x -= SQUARE_SIZE
@@ -119,7 +119,7 @@ class TetrisPiece:
                 for block in self.blocks:
                     block.center_x += SQUARE_SIZE
 
-    def move_right(self, other_pieces: List["TetrisPiece"]) -> None:
+    def move_right(self, other_pieces: List["Piece"]) -> None:
         if not self.at_right_edge():
             for block in self.blocks:
                 block.center_x += SQUARE_SIZE
@@ -127,7 +127,7 @@ class TetrisPiece:
                 for block in self.blocks:
                     block.center_x -= SQUARE_SIZE
 
-    def drop(self, other_pieces: List["TetrisPiece"]) -> None:
+    def drop(self, other_pieces: List["Piece"]) -> None:
         if not self.at_bottom_edge():
             while True:
                 for block in self.blocks:
@@ -152,7 +152,7 @@ class TetrisPiece:
             for block in self.blocks
         )
 
-    def collides_with_other_pieces(self, other_pieces: List["TetrisPiece"]) -> bool:
+    def collides_with_other_pieces(self, other_pieces: List["Piece"]) -> bool:
         for piece in other_pieces:
             if any(block.collides_with_list(piece.blocks) for block in self.blocks):
                 return True
@@ -184,7 +184,7 @@ class TetrisPiece:
                     break
 
 
-class OPiece(TetrisPiece):
+class OPiece(Piece):
     def __init__(self):
         super().__init__(
             block_preview_locations=[
@@ -203,7 +203,7 @@ class OPiece(TetrisPiece):
         )
 
 
-class TPiece(TetrisPiece):
+class TPiece(Piece):
     def __init__(self):
         super().__init__(
             block_preview_locations=[
@@ -223,7 +223,7 @@ class TPiece(TetrisPiece):
         )
 
 
-class IPiece(TetrisPiece):
+class IPiece(Piece):
     def __init__(self):
         super().__init__(
             block_preview_locations=[
@@ -255,7 +255,7 @@ class IPiece(TetrisPiece):
         )
 
 
-class JPiece(TetrisPiece):
+class JPiece(Piece):
     def __init__(self):
         super().__init__(
             block_preview_locations=[
@@ -275,7 +275,7 @@ class JPiece(TetrisPiece):
         )
 
 
-class LPiece(TetrisPiece):
+class LPiece(Piece):
     def __init__(self):
         super().__init__(
             block_preview_locations=[
@@ -295,7 +295,7 @@ class LPiece(TetrisPiece):
         )
 
 
-class SPiece(TetrisPiece):
+class SPiece(Piece):
     def __init__(self):
         super().__init__(
             block_preview_locations=[
@@ -315,7 +315,7 @@ class SPiece(TetrisPiece):
         )
 
 
-class ZPiece(TetrisPiece):
+class ZPiece(Piece):
     def __init__(self):
         super().__init__(
             block_preview_locations=[
@@ -392,7 +392,7 @@ class Tetris(arcade.Window):
         self.pieces.append(self.current_piece)
         self.next_piece = self.get_random_piece()
 
-    def get_random_piece(self) -> TetrisPiece:
+    def get_random_piece(self) -> Piece:
         return random.choice([OPiece, TPiece, IPiece, JPiece, LPiece, SPiece, ZPiece])()
 
     def clear_full_rows(self) -> None:
