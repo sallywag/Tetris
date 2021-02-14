@@ -1,4 +1,4 @@
-from typing import List, Tuple, Dict, Optional
+from typing import List, Tuple, Optional, Any
 from itertools import product
 import random
 
@@ -409,34 +409,6 @@ class ZPiece(TetrisPiece):
             pivot_block_index=3,
         )
 
-class TestPiece(TetrisPiece):
-    def __init__(self):
-        super().__init__(
-            blocks=[
-                Block(
-                    arcade.color.GRAY_BLUE,
-                    SQUARE_SIZE * 15 - SQUARE_SIZE,
-                    SQUARE_SIZE * 18 - SQUARE_SIZE,
-                ),
-                Block(
-                    arcade.color.GRAY_BLUE,
-                    SQUARE_SIZE * 16 - SQUARE_SIZE,
-                    SQUARE_SIZE * 18 - SQUARE_SIZE,
-                ),
-                Block(
-                    arcade.color.GRAY_BLUE,
-                    SQUARE_SIZE * 17 - SQUARE_SIZE,
-                    SQUARE_SIZE * 18 - SQUARE_SIZE,
-                ),
-            ],
-            start_locations=[
-                (SQUARE_SIZE * 7, SQUARE_SIZE * 18),
-                (SQUARE_SIZE * 8, SQUARE_SIZE * 18),
-                (SQUARE_SIZE * 9, SQUARE_SIZE * 18),
-            ],
-            pivot_block_index=1,
-        )
-
 
 class Tetris(arcade.Window):
     def __init__(self):
@@ -489,7 +461,6 @@ class Tetris(arcade.Window):
                 if self.current_piece.collides_with_other_pieces(self.pieces):
                     self.game_over = True
 
-
     def ready_next_piece(self) -> None:
         self.current_piece = self.next_piece
         self.current_piece.move_piece_to_start()
@@ -497,9 +468,7 @@ class Tetris(arcade.Window):
         self.next_piece = self.get_random_piece()
 
     def get_random_piece(self) -> TetrisPiece:
-        return random.choice(
-            [OPiece, TPiece, IPiece, JPiece, LPiece, SPiece, ZPiece]
-        )()
+        return random.choice([OPiece, TPiece, IPiece, JPiece, LPiece, SPiece, ZPiece])()
 
     def clear_full_rows(self) -> None:
         while locations_to_delete := self.get_locations_of_blocks_to_delete():
@@ -508,7 +477,7 @@ class Tetris(arcade.Window):
             self.drop_hanging_pieces()
             self.rows_cleared += len(locations_to_delete)
 
-    def get_locations_of_blocks_to_delete(self) -> Dict[int, int]:
+    def get_locations_of_blocks_to_delete(self) -> List[Any]:
         block_count_per_row = {}
         full_row_locations = []
         for piece in self.pieces:
