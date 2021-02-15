@@ -68,9 +68,7 @@ class Piece:
             self.pivot_block.center_y + new_y,
         )
 
-    def undo_rotation_if_collision_occurs(
-        self, other_pieces: List["Piece"]
-    ) -> None:
+    def undo_rotation_if_collision_occurs(self, other_pieces: List["Piece"]) -> None:
         if (
             self.collides_with_other_pieces(other_pieces)
             or self.past_top_edge()
@@ -158,30 +156,70 @@ class Piece:
                 return True
         return False
 
-    def collapse(self) -> None:
+    # def collapse(self) -> None:
+    #     if len(self.blocks) > 1:
+    #         bottom_block = min(self.blocks, key=lambda block: block.center_y)
+    #         space_y = None
+    #         for i in range(
+    #             bottom_block.center_y + SQUARE_SIZE,
+    #             bottom_block.center_y + SQUARE_SIZE * 4,
+    #             SQUARE_SIZE,
+    #         ):
+    #             pass
+    #         lower_blocks = [
+    #             block
+    #             for block in self.blocks
+    #             if block.center_y == bottom_block.center_y
+    #         ]
+    #         upper_blocks = [
+    #             block
+    #             for block in self.blocks
+    #             if block.center_y != bottom_block.center_y
+    #         ]
+    #         if upper_blocks:
+    #             while True:
+    #                 for block in sorted(upper_blocks, key=lambda x: x.center_y):
+    #                     print(block.center_y)
+    #                     block.center_y -= SQUARE_SIZE
+    #                 print("------------")
+    #                 if any(
+    #                     u_b.collides_with_sprite(l_b)
+    #                     for u_b in upper_blocks
+    #                     for l_b in lower_blocks
+    #                 ):
+    #                     for block in upper_blocks:
+    #                         block.center_y += SQUARE_SIZE
+    #                     break
+    #                 if any(
+    #                     block.center_y == bottom_block.center_y
+    #                     for block in upper_blocks
+    #                 ):
+    #                     break
+
+    def collapse(self) -> None:  # move down by y pairs
         bottom_block = min(self.blocks, key=lambda block: block.center_y)
-        lower_blocks = [
-            block for block in self.blocks if block.center_y == bottom_block.center_y
-        ]
-        upper_blocks = [
-            block for block in self.blocks if block.center_y != bottom_block.center_y
-        ]
-        if upper_blocks:
-            while True:
-                for block in upper_blocks:
-                    block.center_y -= SQUARE_SIZE
-                if any(
-                    u_b.collides_with_sprite(l_b)
-                    for u_b in upper_blocks
-                    for l_b in lower_blocks
-                ):
-                    for block in upper_blocks:
-                        block.center_y += SQUARE_SIZE
-                    break
-                if any(
-                    block.center_y == bottom_block.center_y for block in upper_blocks
-                ):
-                    break
+        for y in range(
+            bottom_block.center_y + SQUARE_SIZE,
+            bottom_block.center_y + SQUARE_SIZE * 4,
+            SQUARE_SIZE,
+        ):
+            blocks_to_move = [block for block in self.blocks if block.center_y == y]
+            if blocks_to_move:
+                while True:
+                    for block in blocks_to_move:
+                        block.center_y -= SQUARE_SIZE
+                    if any(
+                        block.collides_with_list(self.blocks)
+                        for block in blocks_to_move
+                    ):
+                        for block in blocks_to_move:
+                            block.center_y += SQUARE_SIZE
+                        break
+                    if any(
+                        block.center_y == bottom_block.center_y
+                        for block in blocks_to_move
+                    ):
+                        break
 
 
 class OPiece(Piece):
@@ -363,6 +401,8 @@ class Tetris(arcade.Window):
             self.current_piece.move_left(self.pieces)
         elif symbol == arcade.key.RIGHT:
             self.current_piece.move_right(self.pieces)
+        elif symbol == arcade.key.DOWN:
+            self.current_piece.move_down(self.pieces)
         if symbol == arcade.key.SPACE:
             self.current_piece.drop(self.pieces)
         if symbol == arcade.key.R:
@@ -401,6 +441,8 @@ class Tetris(arcade.Window):
             self.collapse_pieces()
             self.drop_hanging_pieces()
             self.rows_cleared += len(locations_to_delete)
+            if self.frames_per_drop > 5 and self.rows_cleared % 5 == 0:
+                self.frames_per_drop -= 1
 
     def get_locations_of_blocks_to_delete(self) -> List[Any]:
         block_count_per_row = {}
@@ -425,7 +467,8 @@ class Tetris(arcade.Window):
 
     def collapse_pieces(self) -> None:
         for piece in self.pieces:
-            piece.collapse()
+            if len(piece.blocks) > 1 and piece is not self.current_piece:
+                piece.collapse()
 
     def drop_hanging_pieces(self) -> None:
         for piece in self.pieces:
