@@ -156,47 +156,7 @@ class Piece:
                 return True
         return False
 
-    # def collapse(self) -> None:
-    #     if len(self.blocks) > 1:
-    #         bottom_block = min(self.blocks, key=lambda block: block.center_y)
-    #         space_y = None
-    #         for i in range(
-    #             bottom_block.center_y + SQUARE_SIZE,
-    #             bottom_block.center_y + SQUARE_SIZE * 4,
-    #             SQUARE_SIZE,
-    #         ):
-    #             pass
-    #         lower_blocks = [
-    #             block
-    #             for block in self.blocks
-    #             if block.center_y == bottom_block.center_y
-    #         ]
-    #         upper_blocks = [
-    #             block
-    #             for block in self.blocks
-    #             if block.center_y != bottom_block.center_y
-    #         ]
-    #         if upper_blocks:
-    #             while True:
-    #                 for block in sorted(upper_blocks, key=lambda x: x.center_y):
-    #                     print(block.center_y)
-    #                     block.center_y -= SQUARE_SIZE
-    #                 print("------------")
-    #                 if any(
-    #                     u_b.collides_with_sprite(l_b)
-    #                     for u_b in upper_blocks
-    #                     for l_b in lower_blocks
-    #                 ):
-    #                     for block in upper_blocks:
-    #                         block.center_y += SQUARE_SIZE
-    #                     break
-    #                 if any(
-    #                     block.center_y == bottom_block.center_y
-    #                     for block in upper_blocks
-    #                 ):
-    #                     break
-
-    def collapse(self) -> None:  # move down by y pairs
+    def collapse(self) -> None:
         bottom_block = min(self.blocks, key=lambda block: block.center_y)
         for y in range(
             bottom_block.center_y + SQUARE_SIZE,
